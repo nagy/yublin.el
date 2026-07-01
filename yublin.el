@@ -38,8 +38,14 @@
 ;;     "the", while "T" + SPC expands to "The".
 ;;
 ;;   - Single-letter shortcuts ("t" -> "the", "n" -> "and", etc.) are
-;;     disabled by default because they are very aggressive.  Set
-;;     `yublin-enable-single-letter' to t to enable them.
+;;     enabled by default.  Set `yublin-enable-single-letter' to nil
+;;     if you find them too aggressive.
+;;
+;; Examples (what you type → what appears):
+;;
+;;   y kn z I tk ab l j.        →  You know what I think about all this.
+;;   s c h k p o b m.           →  She said that they were not with him.
+;;   I ne kw z y tt ab tm.      →  I never knew what you thought about them.
 ;;
 ;; Usage:
 ;;
@@ -64,17 +70,12 @@
   :group 'convenience
   :prefix "yublin-")
 
-(defcustom yublin-enable-single-letter nil
+(defcustom yublin-enable-single-letter t
   "When non-nil, enable single-letter shortcuts.
 Single-letter shortcuts (e.g. \"t\" -> \"the\", \"n\" -> \"and\")
-are very aggressive and can interfere with normal typing.  Enable
-this only if you are doing extended prose writing."
+are very aggressive and can interfere with normal typing.  Set
+this to nil if you find them too intrusive."
   :type 'boolean
-  :group 'yublin)
-
-(defcustom yublin-lighter " Ybn"
-  "Lighter string displayed in the mode line when `yublin-mode' is active."
-  :type 'string
   :group 'yublin)
 
 
@@ -774,8 +775,8 @@ word.  For example, typing \"bc\" followed by SPC expands to
 \"because\".
 
 Single-letter shortcuts (e.g. \"t\" -> \"the\", \"n\" -> \"and\")
-are disabled by default.  Enable them by customizing
-`yublin-enable-single-letter'.
+are enabled by default.  Set `yublin-enable-single-letter' to nil
+if you find them too aggressive.
 
 Yublin mode uses `abbrev-mode' internally.  The mode replaces the
 buffer's local abbrev table with the yublin dictionary.  Turning
@@ -783,7 +784,7 @@ off `yublin-mode' restores the original abbrev table.
 
 The yublin shorthand system was designed by Jon Aquino.
 See URL `https://www.jona.ca/2007/06/yublin-shorthand-for-speed-writing.html'."
-  :lighter yublin-lighter
+  :lighter " Ybn"
   (if yublin-mode
       (yublin--enable)
     (yublin--disable)))

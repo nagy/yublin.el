@@ -138,10 +138,9 @@ If USE-FULL-TABLE is non-nil, use the table with single-letter shortcuts."
   (should (equal (yublin-test--expand "v" t) "have"))
   (should (equal (yublin-test--expand "s" t) "she")))
 
-(ert-deftest yublin-no-expand-single-letter-without-opt-in ()
-  "Single-letter shortcuts should NOT expand in the default table."
-  ;; The default table (no-single) doesn't have single-letter entries,
-  ;; so trying to expand "t" should leave it unchanged.
+(ert-deftest yublin-no-expand-single-letter-when-opt-out ()
+  "When `yublin-enable-single-letter' is nil, single-letter shortcuts
+should NOT expand."
   (should (equal (yublin-test--expand "t") "t"))
   (should (equal (yublin-test--expand "n") "n"))
   (should (equal (yublin-test--expand "y") "y")))
@@ -156,18 +155,18 @@ If USE-FULL-TABLE is non-nil, use the table with single-letter shortcuts."
       (yublin-mode 1)
       (should yublin-mode)
       (should abbrev-mode)
-      (should (eq local-abbrev-table yublin-abbrev-table--no-single))
+      (should (eq local-abbrev-table yublin-abbrev-table))
       ;; Disable
       (yublin-mode -1)
       (should-not yublin-mode)
       (should (eq local-abbrev-table orig-abbrev-table)))))
 
 (ert-deftest yublin-mode-respects-enable-single-letter ()
-  "When `yublin-enable-single-letter' is t, use the full table."
+  "When `yublin-enable-single-letter' is nil, use the no-single table."
   (with-temp-buffer
-    (let ((yublin-enable-single-letter t))
+    (let ((yublin-enable-single-letter nil))
       (yublin-mode 1)
-      (should (eq local-abbrev-table yublin-abbrev-table))
+      (should (eq local-abbrev-table yublin-abbrev-table--no-single))
       (yublin-mode -1))))
 
 (ert-deftest yublin-mode-restores-previous-table ()
@@ -177,7 +176,7 @@ If USE-FULL-TABLE is non-nil, use the table with single-letter shortcuts."
     (let ((custom-table (make-abbrev-table)))
       (setq-local local-abbrev-table custom-table)
       (yublin-mode 1)
-      (should (eq local-abbrev-table yublin-abbrev-table--no-single))
+      (should (eq local-abbrev-table yublin-abbrev-table))
       (yublin-mode -1)
       (should (eq local-abbrev-table custom-table))
       (should abbrev-mode))))
