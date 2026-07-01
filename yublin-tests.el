@@ -211,5 +211,67 @@ should restore the original state without disabling abbrev-mode."
     (yublin--turn-on)
     (should yublin-mode)))
 
+(ert-deftest yublin-capf-at-shortcut ()
+  "`yublin--capf' should return expansion bounds and candidates."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (insert "bc")
+    (let ((result (yublin--capf)))
+      (should result)
+      (should (= (nth 0 result) 1))   ; start
+      (should (= (nth 1 result) 3))   ; end
+      (should (equal (nth 2 result) '("because"))))))
+
+(ert-deftest yublin-capf-not-a-shortcut ()
+  "`yublin--capf' should return nil for unknown words."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (insert "xyzzy")
+    (should-not (yublin--capf))))
+
+(ert-deftest yublin-capf-respects-single-letter ()
+  "`yublin--capf' finds single-letter shortcuts when they are enabled."
+  (with-temp-buffer
+    (let ((yublin-enable-single-letter t))
+      (yublin-mode 1)
+      (insert "t")
+      (let ((result (yublin--capf)))
+        (should result)
+        (should (equal (nth 2 result) '("the")))))))
+
+(ert-deftest yublin-capf-no-single-letter-by-opt-out ()
+  "`yublin--capf' does not offer single-letter completions when opted out."
+  (with-temp-buffer
+    (let ((yublin-enable-single-letter nil))
+      (yublin-mode 1)
+      (insert "t")
+      (should-not (yublin--capf)))))
+
+(ert-deftest yublin-describe-shortcut-known ()
+  "`yublin-describe-shortcut' should message the expansion."
+  (let ((messages nil))
+    (cl-letf (((symbol-function 'message)
+               (lambda (fmt &rest args)
+                 (push (apply #'format fmt args) messages))))
+      (yublin-describe-shortcut "bc")
+      (should (equal (car messages) "bc  →  because")))))
+
+(ert-deftest yublin-describe-shortcut-unknown ()
+  "`yublin-describe-shortcut' should report unknown shortcuts."
+  (let ((messages nil))
+    (cl-letf (((symbol-function 'message)
+               (lambda (fmt &rest args)
+                 (push (apply #'format fmt args) messages))))
+      (yublin-describe-shortcut "xyzzy")
+      (should (equal (car messages) "xyzzy is not a yublin shortcut")))))
+
+(ert-deftest yublin--enable-sets-capf-hook ()
+  "Enabling yublin-mode adds `yublin--capf' to `completion-at-point-functions'."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (should (memq #'yublin--capf completion-at-point-functions))
+    (yublin-mode -1)
+    (should-not (memq #'yublin--capf completion-at-point-functions))))
+
 (provide 'yublin-tests)
 ;;; yublin-tests.el ends here

@@ -37,6 +37,17 @@
 ;;   - Case is handled automatically: typing "t" + SPC expands to
 ;;     "the", while "T" + SPC expands to "The".
 ;;
+;;   - While you type, `abbrev-suggest' shows the expansion hint in
+;;     the echo area -- you see what the shortcut will expand to
+;;     before committing it.
+;;
+;;   - Pressing TAB on a shortcut offers the expansion via
+;;     `completion-at-point', integrating with company-mode, corfu,
+;;     and other completion frameworks.
+;;
+;;   - M-x yublin-describe-shortcut shows the expansion for any
+;;     shortcut.
+;;
 ;;   - Single-letter shortcuts ("t" -> "the", "n" -> "and", etc.) are
 ;;     enabled by default.  Set `yublin-enable-single-letter' to nil
 ;;     if you find them too aggressive.
@@ -75,6 +86,24 @@
 Single-letter shortcuts (e.g. \"t\" -> \"the\", \"n\" -> \"and\")
 are very aggressive and can interfere with normal typing.  Set
 this to nil if you find them too intrusive."
+  :type 'boolean
+  :group 'yublin)
+
+(defcustom yublin-abbrev-suggest t
+  "When non-nil, show the expansion hint in the echo area.
+Uses `abbrev-suggest' to display a preview of what the
+yublin shortcut under point expands to, before you commit it
+with a space or punctuation key.
+
+Requires Emacs 28.1 or later."
+  :type 'boolean
+  :group 'yublin)
+
+(defcustom yublin-completion-at-point t
+  "When non-nil, integrate with `completion-at-point-functions'.
+This makes yublin expansions available via \\[completion-at-point]
+and automatically integrates with company-mode, corfu, and other
+completion frameworks that consume capf backends."
   :type 'boolean
   :group 'yublin)
 
@@ -754,7 +783,14 @@ Used to restore the original table when the mode is disabled.")
   (setq yublin--previous-abbrev-table local-abbrev-table
         yublin--was-abbrev-mode abbrev-mode)
   (setq-local local-abbrev-table (yublin--active-abbrev-table))
-  (abbrev-mode 1))
+  (abbrev-mode 1)
+  ;; Echo-area hint while typing
+  (when (and yublin-abbrev-suggest (boundp 'abbrev-suggest))
+    (setq-local abbrev-suggest t
+                abbrev-suggest-hint-threshold 0))
+  ;; TAB / company / corfu integration
+  (when yublin-completion-at-point
+    (add-hook 'completion-at-point-functions #'yublin--capf 0 t)))
 
 (defun yublin--disable ()
   "Deactivate yublin abbrev table in the current buffer."
@@ -763,7 +799,8 @@ Used to restore the original table when the mode is disabled.")
         (setq-local local-abbrev-table yublin--previous-abbrev-table)
       (kill-local-variable 'local-abbrev-table)))
   (unless yublin--was-abbrev-mode
-    (abbrev-mode -1)))
+    (abbrev-mode -1))
+  (remove-hook 'completion-at-point-functions #'yublin--capf t))
 
 ;;;###autoload
 (define-minor-mode yublin-mode
@@ -773,6 +810,12 @@ When enabled, typing a yublin shortcut followed by a space or
 punctuation character expands it to the corresponding English
 word.  For example, typing \"bc\" followed by SPC expands to
 \"because\".
+
+While typing, `abbrev-suggest' shows a hint in the echo area so
+you can preview the expansion before committing it with a space
+or punctuation key.  Pressing TAB on a shortcut also offers the
+expansion via `completion-at-point', which integrates with
+company-mode, corfu, and other completion frameworks.
 
 Single-letter shortcuts (e.g. \"t\" -> \"the\", \"n\" -> \"and\")
 are enabled by default.  Set `yublin-enable-single-letter' to nil
@@ -788,6 +831,38 @@ See URL `https://www.jona.ca/2007/06/yublin-shorthand-for-speed-writing.html'."
   (if yublin-mode
       (yublin--enable)
     (yublin--disable)))
+
+;;;###autoload
+(defun yublin-describe-shortcut (shortcut)
+  "Display the yublin expansion for SHORTCUT.
+When called interactively, prompts for a shortcut string.
+If the shortcut is unknown, reports that."
+  (interactive "sYublin shortcut: ")
+  (let* ((table (if (and (boundp 'yublin-mode) yublin-mode)
+                     (yublin--active-abbrev-table)
+                   yublin-abbrev-table))
+         (sym (intern-soft shortcut table)))
+    (if sym
+        (message "%s  →  %s" shortcut (symbol-value sym))
+      (message "%s is not a yublin shortcut" shortcut))))
+
+(defun yublin--capf ()
+  "Completion-at-point function for yublin abbreviations.
+When point is at the end of a yublin shortcut, offer its
+expansion as a completion candidate."
+  (when yublin-mode
+    (when-let* ((bounds (bounds-of-thing-at-point 'word))
+                (word (buffer-substring-no-properties
+                       (car bounds) (cdr bounds)))
+                ((> (length word) 0))
+                (table (yublin--active-abbrev-table))
+                (sym (intern-soft word table)))
+      (list (car bounds)
+            (cdr bounds)
+            (list (symbol-value sym))
+            :exclusive 'no
+            :annotation-function (lambda (_) " (yublin)")
+            :company-kind (lambda (_) 'abbrev)))))
 
 ;;;###autoload
 (define-globalized-minor-mode yublin-global-mode
