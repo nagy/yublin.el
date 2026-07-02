@@ -257,6 +257,69 @@ should restore the original state without disabling abbrev-mode."
       (yublin-describe-shortcut "xyzzy")
       (should (equal (car messages) "xyzzy is not a yublin shortcut")))))
 
+;;; Toggle / encode / decode
+
+(ert-deftest yublin-encode-basic ()
+  "Encoding should replace English words with yublin shortcuts."
+  (should (equal (yublin--encode-text "I never knew what you thought about them.")
+                 "I ne kw z y tt ab tm.")))
+
+(ert-deftest yublin-decode-basic ()
+  "Decoding should replace yublin shortcuts with English."
+  (should (equal (yublin--decode-text "I ne kw z y tt ab tm.")
+                 "I never knew what you thought about them.")))
+
+(ert-deftest yublin-toggle-english ()
+  "Toggling English text should encode it to yublin."
+  (should (equal (yublin--toggle-text "I never knew what you thought about them.")
+                 "I ne kw z y tt ab tm.")))
+
+(ert-deftest yublin-toggle-yublin ()
+  "Toggling yublin text should decode it to English."
+  (should (equal (yublin--toggle-text "I ne kw z y tt ab tm.")
+                 "I never knew what you thought about them.")))
+
+(ert-deftest yublin-toggle-mixed-ambiguous ()
+  "Toggle should handle ambiguous short text gracefully."
+  ;; Short text with no clear signal — should encode (default).
+  (let ((result (yublin--toggle-text "the cat")))
+    (should (member result '("t cat" "the cat")))))
+
+(ert-deftest yublin-capitalize-lower ()
+  "Lowercase original preserves lowercase replacement."
+  (should (equal (yublin--capitalize "the" "t") "the")))
+
+(ert-deftest yublin-capitalize-title ()
+  "Capitalized original capitalizes replacement."
+  (should (equal (yublin--capitalize "the" "T") "The")))
+
+(ert-deftest yublin-capitalize-all-caps ()
+  "All-caps original upcases replacement."
+  (should (equal (yublin--capitalize "the" "THE") "THE")))
+
+(ert-deftest yublin-capitalize-title-word ()
+  "Title-case original capitalizes replacement."
+  (should (equal (yublin--capitalize "the" "The") "The")))
+
+(ert-deftest yublin-decode-skip-pronoun-I ()
+  "Capital I should not be decoded to His (it is the pronoun)."
+  (should (equal (yublin--decode-text "I think")
+                 "I think")))
+
+(ert-deftest yublin-decode-lowercase-i ()
+  "Lowercase i should still decode to his."
+  (should (equal (yublin--decode-text "i think")
+                 "his think")))
+
+(ert-deftest yublin-toggle-region-sets-up-tables ()
+  "Calling `yublin-toggle-region' builds the lookup tables."
+  (with-temp-buffer
+    (insert "the cat")
+    (yublin-toggle-region (point-min) (point-max))
+    (should yublin--decode-table)
+    (should yublin--encode-table)
+    (should (hash-table-p yublin--decode-table))))
+
 (ert-deftest yublin--enable-sets-capf-hook ()
   "Enabling yublin-mode adds `yublin--capf' to `completion-at-point-functions'."
   (with-temp-buffer

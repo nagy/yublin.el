@@ -48,6 +48,11 @@
 ;;   - M-x yublin-describe-shortcut shows the expansion for any
 ;;     shortcut.
 ;;
+;;   - M-x yublin-toggle-region switches a region between English
+;;     and yublin, auto-detecting the direction.  Evil users can
+;;     bind `evil-yublin' as an operator (e.g. "g y y" for the
+;;     current line, "g y w" for the next word).
+;;
 ;;   - Single-letter shortcuts ("t" -> "the", "n" -> "and", etc.) are
 ;;     enabled by default.  Set `yublin-enable-single-letter' to nil
 ;;     if you find them too aggressive.
@@ -872,6 +877,128 @@ It skips buffers whose major mode derives from `prog-mode' or
               (derived-mode-p 'term-mode)
               (minibufferp))
     (yublin-mode 1)))
+
+
+;;; Toggle region (English ↔ yublin)
+
+(defvar yublin--decode-table nil
+  "Hash table mapping yublin shortcuts to their English expansions.
+Built from `yublin--dictionary' on first use.")
+
+(defvar yublin--encode-table nil
+  "Hash table mapping lowercase English words to yublin shortcuts.
+Built from `yublin--dictionary' on first use.")
+
+(defun yublin--ensure-toggle-tables ()
+  "Build `yublin--decode-table' and `yublin--encode-table' if needed."
+  (unless yublin--decode-table
+    (setq yublin--decode-table (make-hash-table :test 'equal)
+          yublin--encode-table (make-hash-table :test 'equal))
+    (dolist (entry yublin--dictionary)
+      (let ((shortcut (car entry))
+            (expansion (cdr entry)))
+        (puthash shortcut expansion yublin--decode-table)
+        (puthash (downcase expansion) shortcut yublin--encode-table)))))
+
+(defun yublin-toggle-region (beg end)
+  "Toggle text between BEG and END between English and yublin.
+
+If the region appears to be yublin-encoded (dominated by 1-2
+letter words matching known shortcuts), decode it to English.
+Otherwise, encode English words to yublin shortcuts.
+
+Words for which no mapping exists are left unchanged."
+  (interactive "r")
+  (yublin--ensure-toggle-tables)
+  (let* ((text (buffer-substring-no-properties beg end))
+         (result (yublin--toggle-text text)))
+    (delete-region beg end)
+    (insert result)))
+
+(defun yublin--toggle-text (text)
+  "Return TEXT toggled between English and yublin."
+  (let ((decode-cnt 0)
+        (encode-cnt 0))
+    ;; Count words matching each direction to determine orientation.
+    (dolist (word (split-string text nil t))
+      (let ((lc (downcase word)))
+        (when (gethash lc yublin--decode-table)
+          (setq decode-cnt (1+ decode-cnt)))
+        (when (gethash lc yublin--encode-table)
+          (setq encode-cnt (1+ encode-cnt)))))
+    (if (> decode-cnt encode-cnt)
+        (yublin--decode-text text)
+      (yublin--encode-text text))))
+
+(defun yublin--decode-text (text)
+  "Convert yublin shortcuts in TEXT to their English expansions.
+Preserves capitalization: \"T\" -> \"The\", \"t\" -> \"the\"."
+  (yublin--ensure-toggle-tables)
+  (with-temp-buffer
+    (insert text)
+    (goto-char (point-min))
+    (while (re-search-forward "\\b[[:alpha:]]+\\b" nil t)
+      (let* ((word (match-string 0))
+             (lc (downcase word))
+             (expansion (gethash lc yublin--decode-table)))
+        (when (and expansion
+                   (not (yublin--skip-decode-p word expansion)))
+          (replace-match (yublin--capitalize expansion word)
+                         t t))))
+    (buffer-string)))
+
+(defun yublin--skip-decode-p (word expansion)
+  "Return non-nil if WORD should not be decoded to EXPANSION.
+This prevents a capital pronoun like \"I\" from being decoded to
+\"His\" (the yublin shortcut \"i\" maps to \"his\", but a standalone
+capital \"I\" is the English pronoun, not a yublin shortcut)."
+  (and (= (length word) 1)
+       (>= (aref word 0) ?A)
+       (<= (aref word 0) ?Z)
+       (/= (upcase (aref word 0))
+           (upcase (aref expansion 0)))))
+
+(defun yublin--encode-text (text)
+  "Convert English words in TEXT to their yublin shortcuts.
+Preserves capitalization: \"The\" -> \"T\", \"the\" -> \"t\"."
+  (yublin--ensure-toggle-tables)
+  (with-temp-buffer
+    (insert text)
+    (goto-char (point-min))
+    (while (re-search-forward "\\b[[:alpha:]'\x27]+\\b" nil t)
+      (let* ((word (match-string 0))
+             (lc (downcase word))
+             (shortcut (gethash lc yublin--encode-table)))
+        (when shortcut
+          (replace-match (yublin--capitalize shortcut (match-string 0))
+                         t t))))
+    (buffer-string)))
+
+(defun yublin--capitalize (replacement original)
+  "Return REPLACEMENT with the capitalization of ORIGINAL.
+If ORIGINAL is all-uppercase, REPLACEMENT is upcased.
+If ORIGINAL is capitalized, REPLACEMENT is capitalized.
+Otherwise REPLACEMENT is returned as-is."
+  (let ((case-fold-search nil)
+        (first (aref original 0)))
+    (cond
+     ((and (> (length original) 1)
+           (null (string-match-p "[[:lower:]]" original)))
+      (upcase replacement))
+     ((and (>= first ?A) (<= first ?Z))
+      (capitalize replacement))
+     (t replacement))))
+
+
+;;; Evil integration (optional)
+
+(eval-after-load 'evil
+  `(evil-define-operator evil-yublin (beg end _type)
+     "Toggle text between English and yublin.
+See `yublin-toggle-region'."
+     :move-point nil
+     (interactive ,(string 60 ?r 62))
+     (yublin-toggle-region beg end)))
 
 (provide 'yublin)
 ;;; yublin.el ends here
