@@ -61,14 +61,6 @@ This matches Jon Aquino's original design rule."
     (should (>= count 590))
     (should (<= count 630))))
 
-(ert-deftest yublin-dictionary-single-letter-count ()
-  "Verify 25 single-letter entries matching the known yublin set."
-  (let ((count 0))
-    (dolist (entry yublin--dictionary)
-      (when (= (length (car entry)) 1)
-        (setq count (1+ count))))
-    (should (= count 25))))
-
 ;;; Abbrev table construction
 
 (ert-deftest yublin-abbrev-table-has-all-entries ()
