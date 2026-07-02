@@ -99,14 +99,6 @@ Requires Emacs 28.1 or later."
   :type 'boolean
   :group 'yublin)
 
-(defcustom yublin-completion-at-point t
-  "When non-nil, integrate with `completion-at-point-functions'.
-This makes yublin expansions available via \\[completion-at-point]
-and automatically integrates with company-mode, corfu, and other
-completion frameworks that consume capf backends."
-  :type 'boolean
-  :group 'yublin)
-
 
 ;;; Dictionary
 
@@ -789,8 +781,7 @@ Used to restore the original table when the mode is disabled.")
     (setq-local abbrev-suggest t
                 abbrev-suggest-hint-threshold 0))
   ;; TAB / company / corfu integration
-  (when yublin-completion-at-point
-    (add-hook 'completion-at-point-functions #'yublin--capf 0 t)))
+  (add-hook 'completion-at-point-functions #'yublin--capf 0 t))
 
 (defun yublin--disable ()
   "Deactivate yublin abbrev table in the current buffer."
