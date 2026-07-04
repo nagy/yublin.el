@@ -104,6 +104,13 @@ Requires Emacs 28.1 or later."
   :type 'boolean
   :group 'yublin)
 
+(defcustom yublin-skip-file-extensions t
+  "When non-nil, don't expand abbrevs that look like file extensions.
+This prevents expansions like \='rs\=' → \='rest\=' in filenames such as
+\='main.rs\=', or \='md\=' → \='mind\=' in \='AGENTS.md\='."
+  :type 'boolean
+  :group 'yublin)
+
 
 ;;; Dictionary
 
@@ -785,6 +792,8 @@ Used to restore the original table when the mode is disabled.")
   (when (and yublin-abbrev-suggest (boundp 'abbrev-suggest))
     (setq-local abbrev-suggest t
                 abbrev-suggest-hint-threshold 0))
+  ;; Custom expand function to skip file extensions
+  (setq-local abbrev-expand-function #'yublin--abbrev-expand)
   ;; TAB / company / corfu integration
   (add-hook 'completion-at-point-functions #'yublin--capf 0 t))
 
@@ -796,6 +805,7 @@ Used to restore the original table when the mode is disabled.")
       (kill-local-variable 'local-abbrev-table)))
   (unless yublin--was-abbrev-mode
     (abbrev-mode -1))
+  (kill-local-variable 'abbrev-expand-function)
   (remove-hook 'completion-at-point-functions #'yublin--capf t))
 
 ;;;###autoload
@@ -877,6 +887,27 @@ It skips buffers whose major mode derives from `prog-mode' or
               (derived-mode-p 'term-mode)
               (minibufferp))
     (yublin-mode 1)))
+
+
+;;; File-extension aware expansion
+
+(defun yublin--file-extension-context-p ()
+  "Return non-nil if the word before point is preceded by a dot.
+This detects patterns like .rs in main.rs or .md in AGENTS.md,
+preventing yublin from expanding file extensions as abbrevs."
+  (save-excursion
+    (when (/= 0 (skip-syntax-backward "w_"))
+      (eq (char-before) ?.))))
+
+(defun yublin--abbrev-expand ()
+  "Expand yublin abbrev unless it looks like a file extension.
+Calls `abbrev--default-expand' to perform the actual expansion."
+  (if (and yublin-skip-file-extensions
+           (yublin--file-extension-context-p))
+      ;; Return non-nil to tell `expand-abbrev' we handled it
+      ;; (prevents `abbrev--suggest-maybe-suggest' from firing).
+      t
+    (abbrev--default-expand)))
 
 
 ;;; Toggle region (English ↔ yublin)

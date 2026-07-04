@@ -328,5 +328,60 @@ should restore the original state without disabling abbrev-mode."
     (yublin-mode -1)
     (should-not (memq #'yublin--capf completion-at-point-functions))))
 
+(ert-deftest yublin--enable-sets-abbrev-expand-function ()
+  "Enabling yublin-mode sets `abbrev-expand-function' to yublin's custom one."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (should (eq abbrev-expand-function #'yublin--abbrev-expand))
+    (yublin-mode -1)
+    (should-not (eq abbrev-expand-function #'yublin--abbrev-expand))))
+
+;;; File-extension skipping
+
+(defun yublin-test--expand-with-yublin-mode (shortcut)
+  "Insert SHORTCUT in a temp buffer with `yublin-mode' enabled, then expand.
+Returns the buffer contents after expansion."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (insert shortcut)
+    (expand-abbrev)
+    (buffer-string)))
+
+(ert-deftest yublin-skip-file-extension-rs ()
+  "File extension .rs in main.rs should NOT expand to .rest."
+  (should (equal (yublin-test--expand-with-yublin-mode "main.rs")
+                 "main.rs")))
+
+(ert-deftest yublin-skip-file-extension-md ()
+  "File extension .md in AGENTS.md should NOT expand to .mind."
+  (should (equal (yublin-test--expand-with-yublin-mode "AGENTS.md")
+                 "AGENTS.md")))
+
+(ert-deftest yublin-skip-file-extension-sql ()
+  "File extension .sql in backup.sql should NOT expand (ql -> story)."
+  (should (equal (yublin-test--expand-with-yublin-mode "backup.sql")
+                 "backup.sql")))
+
+(ert-deftest yublin-skip-file-extension-respects-custom ()
+  "When `yublin-skip-file-extensions' is nil, file extensions do expand."
+  (with-temp-buffer
+    (yublin-mode 1)
+    (let ((yublin-skip-file-extensions nil))
+      (insert "main.rs")
+      (expand-abbrev)
+      (should (equal (buffer-string) "main.rest")))))
+
+(ert-deftest yublin-normal-expand-still-works ()
+  "Normal yublin shortcuts still expand even with file-extension check."
+  (should (equal (yublin-test--expand-with-yublin-mode "bc")
+                 "because"))
+  (should (equal (yublin-test--expand-with-yublin-mode "gd")
+                 "good")))
+
+(ert-deftest yublin-no-false-positive-space ()
+  "Word preceded by space, not dot, should still expand normally."
+  (should (equal (yublin-test--expand-with-yublin-mode " bc")
+                 " because")))
+
 (provide 'yublin-tests)
 ;;; yublin-tests.el ends here
