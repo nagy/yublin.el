@@ -845,8 +845,8 @@ When called interactively, prompts for a shortcut string.
 If the shortcut is unknown, reports that."
   (interactive "sYublin shortcut: ")
   (let* ((table (if (and (boundp 'yublin-mode) yublin-mode)
-                     (yublin--active-abbrev-table)
-                   yublin-abbrev-table))
+                    (yublin--active-abbrev-table)
+                  yublin-abbrev-table))
          (sym (intern-soft shortcut table)))
     (if sym
         (message "%s  →  %s" shortcut (symbol-value sym))
