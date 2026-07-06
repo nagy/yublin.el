@@ -903,7 +903,7 @@ path, preventing yublin from expanding abbreviations that are joined
 to a preceding word by a connector character."
   (save-excursion
     (when (/= 0 (skip-syntax-backward "w"))
-      (memq (char-before) '(?. ?\x27 ?/ ?- ?\\)))))
+      (memq (char-before) '(?. ?\x27 ?/ ?- ?\( ?\[ ?\{ ?\\)))))
 
 (defun yublin--abbrev-expand ()
   "Expand yublin abbrev unless it looks like a file extension.

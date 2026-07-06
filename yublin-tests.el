@@ -398,5 +398,20 @@ Returns the buffer contents after expansion."
   (should (equal (yublin-test--expand-with-yublin-mode "some-rs")
                  "some-rs")))
 
+(ert-deftest yublin-skip-paren-joined ()
+  "Shortcut after '(' like file(s) should NOT expand to file(she)."
+  (should (equal (yublin-test--expand-with-yublin-mode "file(s")
+                 "file(s")))
+
+(ert-deftest yublin-skip-bracket-joined ()
+  "Shortcut after '[' like opt[s] should NOT expand to opt[she]."
+  (should (equal (yublin-test--expand-with-yublin-mode "opt[s")
+                 "opt[s")))
+
+(ert-deftest yublin-skip-brace-joined ()
+  "Shortcut after '{' like val{t} should NOT expand to val{the}."
+  (should (equal (yublin-test--expand-with-yublin-mode "val{t")
+                 "val{t")))
+
 (provide 'yublin-tests)
 ;;; yublin-tests.el ends here
