@@ -336,7 +336,7 @@ should restore the original state without disabling abbrev-mode."
     (yublin-mode -1)
     (should-not (eq abbrev-expand-function #'yublin--abbrev-expand))))
 
-;;; File-extension skipping
+;;; Joined-word skipping
 
 (defun yublin-test--expand-with-yublin-mode (shortcut)
   "Insert SHORTCUT in a temp buffer with `yublin-mode' enabled, then expand.
@@ -362,11 +362,11 @@ Returns the buffer contents after expansion."
   (should (equal (yublin-test--expand-with-yublin-mode "backup.sql")
                  "backup.sql")))
 
-(ert-deftest yublin-skip-file-extension-respects-custom ()
-  "When `yublin-skip-file-extensions' is nil, file extensions do expand."
+(ert-deftest yublin-skip-joined-word-respects-custom ()
+  "When `yublin-skip-joined-words' is nil, joined words do expand."
   (with-temp-buffer
     (yublin-mode 1)
-    (let ((yublin-skip-file-extensions nil))
+    (let ((yublin-skip-joined-words nil))
       (insert "main.rs")
       (expand-abbrev)
       (should (equal (buffer-string) "main.rest")))))
@@ -382,6 +382,21 @@ Returns the buffer contents after expansion."
   "Word preceded by space, not dot, should still expand normally."
   (should (equal (yublin-test--expand-with-yublin-mode " bc")
                  " because")))
+
+(ert-deftest yublin-skip-apostrophe-contraction ()
+  "Apostrophe before a shortcut (DO's) should NOT expand to DO'she."
+  (should (equal (yublin-test--expand-with-yublin-mode "DO's")
+                 "DO's")))
+
+(ert-deftest yublin-skip-slash-path ()
+  "Slash before a shortcut (foo/rs) should NOT expand to foo/rest."
+  (should (equal (yublin-test--expand-with-yublin-mode "foo/rs")
+                 "foo/rs")))
+
+(ert-deftest yublin-skip-dash-joined ()
+  "Dash before a shortcut (some-rs) should NOT expand to some-rest."
+  (should (equal (yublin-test--expand-with-yublin-mode "some-rs")
+                 "some-rs")))
 
 (provide 'yublin-tests)
 ;;; yublin-tests.el ends here

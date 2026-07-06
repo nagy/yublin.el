@@ -104,10 +104,15 @@ Requires Emacs 28.1 or later."
   :type 'boolean
   :group 'yublin)
 
-(defcustom yublin-skip-file-extensions t
-  "When non-nil, don't expand abbrevs that look like file extensions.
+(defcustom yublin-skip-joined-words t
+  "When non-nil, don't expand abbrevs that are part of a larger token.
 This prevents expansions like \='rs\=' → \='rest\=' in filenames such as
-\='main.rs\=', or \='md\=' → \='mind\=' in \='AGENTS.md\='."
+\='main.rs\=', or \='s\=' → \='she\=' in contractions like \='DO's\='.
+
+It works by checking whether the shortcut is immediately preceded
+by a connector character (period, apostrophe, slash, dash, or
+backslash) — the kind of thing that joins the shortcut to a
+larger word or path."
   :type 'boolean
   :group 'yublin)
 
@@ -889,21 +894,22 @@ It skips buffers whose major mode derives from `prog-mode' or
     (yublin-mode 1)))
 
 
-;;; File-extension aware expansion
+;;; Joined-word aware expansion
 
-(defun yublin--file-extension-context-p ()
-  "Return non-nil if the word before point is preceded by a dot.
-This detects patterns like .rs in main.rs or .md in AGENTS.md,
-preventing yublin from expanding file extensions as abbrevs."
+(defun yublin--joined-word-context-p ()
+  "Return non-nil if the word before point is part of a larger token.
+This detects patterns like .rs in main.rs, 's in DO's, or /rs in a
+path, preventing yublin from expanding abbreviations that are joined
+to a preceding word by a connector character."
   (save-excursion
-    (when (/= 0 (skip-syntax-backward "w_"))
-      (eq (char-before) ?.))))
+    (when (/= 0 (skip-syntax-backward "w"))
+      (memq (char-before) '(?. ?\x27 ?/ ?- ?\\)))))
 
 (defun yublin--abbrev-expand ()
   "Expand yublin abbrev unless it looks like a file extension.
 Calls `abbrev--default-expand' to perform the actual expansion."
-  (if (and yublin-skip-file-extensions
-           (yublin--file-extension-context-p))
+  (if (and yublin-skip-joined-words
+           (yublin--joined-word-context-p))
       ;; Return non-nil to tell `expand-abbrev' we handled it
       ;; (prevents `abbrev--suggest-maybe-suggest' from firing).
       t
