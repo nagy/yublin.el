@@ -107,7 +107,7 @@ Requires Emacs 28.1 or later."
 (defcustom yublin-skip-joined-words t
   "When non-nil, don't expand abbrevs that are part of a larger token.
 This prevents expansions like \='rs\=' → \='rest\=' in filenames such as
-\='main.rs\=', or \='s\=' → \='she\=' in contractions like \='DO's\='.
+\='main.rs\=', or \='s\=' → \='she\=' in contractions like \='DO\='s\='.
 
 It works by checking whether the shortcut is immediately preceded
 by a connector character (period, apostrophe, slash, dash, or
@@ -781,7 +781,7 @@ If INCLUDE-SINGLE-LETTER is nil, omit 1-letter shortcuts."
 ;;; Minor mode
 
 (defvar-local yublin--previous-abbrev-table nil
-  "The buffer's `local-abbrev-table' before `yublin-mode' was enabled.
+  "The buffer\='s `local-abbrev-table' before `yublin-mode' was enabled.
 Used to restore the original table when the mode is disabled.")
 
 (defvar-local yublin--was-abbrev-mode nil
@@ -833,7 +833,7 @@ are enabled by default.  Set `yublin-enable-single-letter' to nil
 if you find them too aggressive.
 
 Yublin mode uses `abbrev-mode' internally.  The mode replaces the
-buffer's local abbrev table with the yublin dictionary.  Turning
+buffer\='s local abbrev table with the yublin dictionary.  Turning
 off `yublin-mode' restores the original abbrev table.
 
 The yublin shorthand system was designed by Jon Aquino.
@@ -898,7 +898,7 @@ It skips buffers whose major mode derives from `prog-mode' or
 
 (defun yublin--joined-word-context-p ()
   "Return non-nil if the word before point is part of a larger token.
-This detects patterns like .rs in main.rs, 's in DO's, or /rs in a
+This detects patterns like .rs in main.rs, \='s in DO\='s, or /rs in a
 path, preventing yublin from expanding abbreviations that are joined
 to a preceding word by a connector character."
   (save-excursion
