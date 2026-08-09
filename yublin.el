@@ -969,17 +969,25 @@ Words for which no mapping exists are left unchanged."
 
 (defun yublin--decode-text (text)
   "Convert yublin shortcuts in TEXT to their English expansions.
-Preserves capitalization: \"T\" -> \"The\", \"t\" -> \"the\"."
+Preserves capitalization: \"T\" -> \"The\", \"t\" -> \"the\".
+Contractions are left alone: they are single tokens in the source
+text and have their own letter-only shortcuts (dt, gb, ll, ...), so
+a literal \"don't\" or \"I'm\" never matches the shortcut table."
   (yublin--ensure-toggle-tables)
   (with-temp-buffer
     (insert text)
     (goto-char (point-min))
-    (while (re-search-forward "\\b[[:alpha:]]+\\b" nil t)
+    (while (re-search-forward "\\b[[:alpha:]']+\\b" nil t)
       (let* ((word (match-string 0))
              (lc (downcase word))
              (expansion (gethash lc yublin--decode-table)))
         (when (and expansion
-                   (not (yublin--skip-decode-p word expansion)))
+                   (not (yublin--skip-decode-p word expansion))
+                   ;; A letter starting right after an apostrophe
+                   ;; (e.g. the "s" in "'s") is part of a contraction,
+                   ;; not a standalone shortcut.
+                   (not (and (> (match-beginning 0) (point-min))
+                             (eq (char-before (match-beginning 0)) ?'))))
           (replace-match (yublin--capitalize expansion word)
                          t t))))
     (buffer-string)))
@@ -1002,7 +1010,7 @@ Preserves capitalization: \"The\" -> \"T\", \"the\" -> \"t\"."
   (with-temp-buffer
     (insert text)
     (goto-char (point-min))
-    (while (re-search-forward "\\b[[:alpha:]'\x27]+\\b" nil t)
+    (while (re-search-forward "\\b[[:alpha:]']+\\b" nil t)
       (let* ((word (match-string 0))
              (lc (downcase word))
              (shortcut (gethash lc yublin--encode-table)))
@@ -1023,7 +1031,11 @@ Otherwise REPLACEMENT is returned as-is."
            (null (string-match-p "[[:lower:]]" original)))
       (upcase replacement))
      ((and (>= first ?A) (<= first ?Z))
-      (capitalize replacement))
+      ;; Capitalize only the first character: `capitalize' treats the
+      ;; apostrophe as a word boundary and would mangle contractions
+      ;; ("he's" -> "He'S").
+      (concat (upcase (substring replacement 0 1))
+              (downcase (substring replacement 1))))
      (t replacement))))
 
 

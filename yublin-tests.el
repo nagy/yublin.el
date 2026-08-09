@@ -311,6 +311,38 @@ should restore the original state without disabling abbrev-mode."
   (should (equal (yublin--decode-text "i think")
                  "his think")))
 
+;;; Apostrophe safety (R2 regression tests)
+
+(ert-deftest yublin-decode-preserves-contractions ()
+  "Decoding must not split apostrophe contractions.
+Literal contractions are not shortcuts (they have dedicated
+letter-only shortcuts like dt/gb/ll) and must pass through unchanged."
+  (dolist (text '("don't" "I'm here" "it's" "can't" "she's" "I'll"
+                  "you're" "that's"))
+    (should (equal (yublin--decode-text text) text))))
+
+(ert-deftest yublin-decode-leaves-apostrophe-suffix-alone ()
+  "A letter starting right after an apostrophe must not decode
+(e.g. the s in DO's, or a leading 's)."
+  (should (equal (yublin--decode-text "DO's") "DO's"))
+  (should (equal (yublin--decode-text "'s been a long time")
+                 "'s been a long time")))
+
+(ert-deftest yublin-capitalize-preserves-contractions ()
+  "Capitalizing a contraction must not treat ' as a word boundary."
+  (should (equal (yublin--capitalize "he's" "Wq") "He's"))
+  (should (equal (yublin--capitalize "i'll" "Ll") "I'll"))
+  (should (equal (yublin--capitalize "he's" "HE'S") "HE'S")))
+
+(ert-deftest yublin-toggle-roundtrip-with-contractions ()
+  "Encode followed by decode must round-trip contractions exactly."
+  (dolist (text '("I'm not going to the store."
+                  "He's not here, but I'll be back."
+                  "She said that's enough, don't you think?"))
+    (let* ((enc (yublin--encode-text text))
+           (dec (yublin--decode-text enc)))
+      (should (equal dec text)))))
+
 (ert-deftest yublin-toggle-region-sets-up-tables ()
   "Calling `yublin-toggle-region' builds the lookup tables."
   (with-temp-buffer
