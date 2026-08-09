@@ -61,6 +61,27 @@ This matches Jon Aquino's original design rule."
     (should (>= count 590))
     (should (<= count 630))))
 
+(ert-deftest yublin-dictionary-standing-has-two-shortcuts ()
+  "The source cheatsheet assigns two shortcuts to \"standing\" (cq, oq).
+This is deliberate: the duplicate exists in Jon Aquino's original
+cheatsheet.  The encode table is built with last-wins `puthash', so
+encoding \"standing\" always yields \"oq\" (the later entry); both
+shortcuts decode back to \"standing\".  Keep this assertion so future
+editors don't \"fix\" the duplicate blindly."
+  (let (shortcuts)
+    (dolist (entry yublin--dictionary)
+      (when (equal (cdr entry) "standing")
+        (push (car entry) shortcuts)))
+    (should (equal (sort shortcuts #'string<) '("cq" "oq")))))
+
+(ert-deftest yublin-encode-standing-deterministic ()
+  "Encoding \"standing\" yields exactly one shortcut, \"oq\"."
+  (yublin--ensure-toggle-tables)
+  (should (equal (gethash "standing" yublin--encode-table) "oq"))
+  (should (equal (yublin--encode-text "standing") "oq"))
+  (should (equal (yublin--decode-text "cq") "standing"))
+  (should (equal (yublin--decode-text "oq") "standing")))
+
 ;;; Abbrev table construction
 
 (ert-deftest yublin-abbrev-table-has-all-entries ()

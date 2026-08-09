@@ -11,7 +11,7 @@ Requires Emacs 28.1+. License: AGPL-3.0-or-later.
 
 - `yublin.el` — the package (dictionary, abbrev tables, minor mode,
   joined-word guard, region toggle, evil operator).
-- `yublin-tests.el` — the ert suite (52 tests). Must stay green.
+- `yublin-tests.el` — the ert suite (54 tests). Must stay green.
 - `default.nix` — melpaBuild derivation; runs the ert suite in
   `checkPhase` with byte-compile warnings as errors.
 
@@ -43,6 +43,10 @@ nix-build default.nix
   Shortcuts are 1-2 letters, letter-only; expansions may contain
   apostrophes (contractions have dedicated letter-only shortcuts such as
   `dt`, `gb`, `ll`). Do not add shortcuts containing apostrophes.
+- One expansion is deliberately duplicated in the source cheatsheet:
+  `standing` maps to both `cq` and `oq`. The encode table resolves it
+  last-wins to `oq`; both decode back. Do not "fix" this — the
+  `yublin-dictionary-standing-has-two-shortcuts` test pins it.
 - Encode and decode must stay symmetric: contractions are whole tokens
   in both directions; decode must never expand a letter adjacent to an
   apostrophe.
