@@ -12,8 +12,8 @@ Requires Emacs 28.1+. License: AGPL-3.0-or-later.
 - `yublin.el` — the package (dictionary, abbrev tables, minor mode,
   joined-word guard, region toggle, evil operator).
 - `yublin-tests.el` — the ert suite (54 tests). Must stay green.
-- `default.nix` — melpaBuild derivation; runs the ert suite in
-  `checkPhase` with byte-compile warnings as errors.
+- `flake.nix` — flake-parts + `melpaBuild`; runs the ert suite in
+  `checkPhase` with byte-compile warnings as errors (`doCheck = true`).
 
 ## Commands
 
@@ -29,10 +29,12 @@ Byte-compile check:
 emacs --batch -L . -f batch-byte-compile yublin.el
 ```
 
-Full build gate (uses Nix, Emacs 30.2, native-comp + checkPhase):
+Full build gate (Nix flake; builds the package with byte-compile
+warnings as errors and runs the ert suite in `checkPhase`):
 
 ```
-nix-build default.nix
+nix build
+nix flake check
 ```
 
 ## Conventions
