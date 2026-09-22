@@ -14,6 +14,9 @@ Requires Emacs 28.1+. License: AGPL-3.0-or-later.
 - `yublin-tests.el` — the ert suite (54 tests). Must stay green.
 - `flake.nix` — flake-parts + `melpaBuild`; runs the ert suite in
   `checkPhase` with byte-compile warnings as errors (`doCheck = true`).
+  `checks.lint` gates `package-lint` + `checkdoc` on `yublin.el`
+  (the `eval-after-load` finding for the optional evil integration is
+  deliberately allowlisted there).
 
 ## Commands
 
@@ -30,7 +33,8 @@ emacs --batch -L . -f batch-byte-compile yublin.el
 ```
 
 Full build gate (Nix flake; builds the package with byte-compile
-warnings as errors and runs the ert suite in `checkPhase`):
+warnings as errors, runs the ert suite in `checkPhase`, and lints with
+`package-lint` + `checkdoc`):
 
 ```
 nix build

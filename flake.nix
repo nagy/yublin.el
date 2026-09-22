@@ -87,6 +87,51 @@
 
           checks.default = config.packages.yublin;
 
+          # Lint gate: checkdoc + package-lint. Both catch what
+          # byte-compilation cannot (docstring style, package metadata,
+          # prefix conventions). Findings fail the build.
+          checks.lint =
+            pkgs.runCommand "yublin-lint"
+              {
+                nativeBuildInputs = [
+                  (pkgs.emacsPackages.emacsWithPackages (p: [ p.package-lint ]))
+                ];
+                src = config.packages.yublin.src;
+                meta.description = "checkdoc and package-lint gate for yublin";
+              }
+              ''
+              export HOME=$TMPDIR
+              cp "$src"/yublin.el .
+              # package-lint assumes online ELPA. Offline it needs
+              # stubs: extend `package-lint--sane-prefixes' where
+              # symbols use a different prefix than the file name
+              # suggests (here: the evil operator), and add missing deps
+              # via :after advice on `package-initialize' — it nils
+              # `package-alist' on every call, so plain push before
+              # -f package-lint-batch-and-exit gets wiped.
+              #
+              # Warnings are made non-fatal and the output is gated by
+              # hand instead, so one documented exception (below) can be
+              # allowlisted without weakening everything else.
+              pl_log=$(emacs --batch -l package-lint \
+                --eval '(setq package-lint--sane-prefixes (concat package-lint--sane-prefixes "\\|evil-yublin"))' \
+                --eval '(setq package-lint-batch-fail-on-warnings nil)' \
+                -f package-lint-batch-and-exit yublin.el 2>&1 || true)
+              # Accepted finding (documented exception): the optional
+              # evil integration defers via `eval-after-load'; making
+              # evil a hard dependency would be worse. "Entering
+              # directory" is batch noise printed alongside findings.
+              pl_log=$(printf '%s\n' "$pl_log" \
+                | grep -v -e "^Entering directory" \
+                          -e "eval-after-load' is for use" || true)
+              if [ -n "$pl_log" ]; then printf '%s\n' "$pl_log"; exit 1; fi
+              # checkdoc is built in but exits 0 on findings — gate on
+              # non-empty output.
+              lint_log=$(emacs --batch -l checkdoc --eval '(checkdoc-file "yublin.el")' 2>&1 || true)
+              if [ -n "$lint_log" ]; then printf '%s\n' "$lint_log"; exit 1; fi
+              touch $out
+            '';
+
           devShells.default = pkgs.mkShell {
             # A real Emacs for interactive testing of the package while
             # hacking on it.

@@ -1,4 +1,4 @@
-;;; yublin.el --- Yublin shorthand expansion for Emacs -*- lexical-binding: t -*-
+;;; yublin.el --- Yublin shorthand expansion for speed-writing -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Daniel Nagy
 
