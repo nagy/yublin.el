@@ -17,6 +17,10 @@ Requires Emacs 28.1+. License: AGPL-3.0-or-later.
   `checks.lint` gates `package-lint` + `checkdoc` on `yublin.el`
   (the `eval-after-load` finding for the optional evil integration is
   deliberately allowlisted there).
+  The package `version` comes from `self.lastModifiedDate` (derived
+  `0-unstable-YYYY-MM-DD`, epoch fallback for non-git sources), so no
+  manual version bumps.
+
 
 ## Commands
 

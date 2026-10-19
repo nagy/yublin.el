@@ -8,6 +8,7 @@
 
   outputs =
     inputs@{
+      self,
       flake-parts,
       nixpkgs,
       ...
@@ -37,7 +38,13 @@
             # Nix rejects versions Nixpkgs cannot parse. Convention for
             # unreleased packages: <upstream-version>-unstable-<YYYY-MM-DD>,
             # where the date is the last commit touching the source.
-            version = "0.1.0-unstable-2026-08-09";
+            # Derive the date from the flake self-reference. Fall back to
+            # the epoch when the source is not a git checkout.
+            version =
+              let
+                d = self.lastModifiedDate or "19700101000000";
+              in
+              "0-unstable-${builtins.substring 0 4 d}-${builtins.substring 4 2 d}-${builtins.substring 6 2 d}";
 
             src = lib.cleanSource ./.;
 
