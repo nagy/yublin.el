@@ -752,6 +752,7 @@ Each element is (SHORTCUT . EXPANSION) where SHORTCUT is a 1- or
 (defun yublin--build-abbrev-table (include-single-letter)
   "Build an abbrev table from `yublin--dictionary'.
 If INCLUDE-SINGLE-LETTER is nil, omit 1-letter shortcuts."
+  (declare (side-effect-free t))
   (let ((table (make-abbrev-table)))
     (dolist (entry yublin--dictionary)
       (let ((shortcut (car entry))
@@ -773,6 +774,7 @@ If INCLUDE-SINGLE-LETTER is nil, omit 1-letter shortcuts."
 
 (defun yublin--active-abbrev-table ()
   "Return the abbrev table to use based on `yublin-enable-single-letter'."
+  (declare (side-effect-free t))
   (if yublin-enable-single-letter
       yublin-abbrev-table
     yublin-abbrev-table--no-single))
@@ -997,6 +999,7 @@ a literal \"don't\" or \"I'm\" never matches the shortcut table."
 This prevents a capital pronoun like \"I\" from being decoded to
 \"His\" (the yublin shortcut \"i\" maps to \"his\", but a standalone
 capital \"I\" is the English pronoun, not a yublin shortcut)."
+  (declare (pure t) (side-effect-free t))
   (and (= (length word) 1)
        (>= (aref word 0) ?A)
        (<= (aref word 0) ?Z)
@@ -1024,6 +1027,7 @@ Preserves capitalization: \"The\" -> \"T\", \"the\" -> \"t\"."
 If ORIGINAL is all-uppercase, REPLACEMENT is upcased.
 If ORIGINAL is capitalized, REPLACEMENT is capitalized.
 Otherwise REPLACEMENT is returned as-is."
+  (declare (pure t) (side-effect-free t))
   (let ((case-fold-search nil)
         (first (aref original 0)))
     (cond
