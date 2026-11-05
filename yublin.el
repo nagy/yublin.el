@@ -1,4 +1,4 @@
-;;; yublin.el --- Yublin shorthand expansion for speed-writing -*- lexical-binding: t -*-
+;;; yublin.el --- Yublin shorthand for speed-writing -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Daniel Nagy
 
@@ -105,7 +105,7 @@ Requires Emacs 28.1 or later."
   :group 'yublin)
 
 (defcustom yublin-skip-joined-words t
-  "When non-nil, don't expand abbrevs that are part of a larger token.
+  "When non-nil, do not expand abbrevs that are part of a larger token.
 This prevents expansions like \='rs\=' → \='rest\=' in filenames such as
 \='main.rs\=', or \='s\=' → \='she\=' in contractions like \='DO\='s\='.
 
@@ -818,7 +818,6 @@ Used to restore the original table when the mode is disabled.")
 ;;;###autoload
 (define-minor-mode yublin-mode
   "Toggle yublin shorthand expansion in the current buffer.
-
 When enabled, typing a yublin shortcut followed by a space or
 punctuation character expands it to the corresponding English
 word.  For example, typing \"bc\" followed by SPC expands to
@@ -860,7 +859,7 @@ If the shortcut is unknown, reports that."
       (message "%s is not a yublin shortcut" shortcut))))
 
 (defun yublin--capf ()
-  "Completion-at-point function for yublin abbreviations.
+  "Return yublin completion candidates for the word at point.
 When point is at the end of a yublin shortcut, offer its
 expansion as a completion candidate."
   (when yublin-mode
@@ -941,7 +940,6 @@ Built from `yublin--dictionary' on first use.")
 
 (defun yublin-toggle-region (beg end)
   "Toggle text between BEG and END between English and yublin.
-
 If the region appears to be yublin-encoded (dominated by 1-2
 letter words matching known shortcuts), decode it to English.
 Otherwise, encode English words to yublin shortcuts.
@@ -1047,7 +1045,7 @@ Otherwise REPLACEMENT is returned as-is."
 
 (eval-after-load 'evil
   `(evil-define-operator evil-yublin (beg end _type)
-     "Toggle text between English and yublin.
+     "Toggle text between English and yublin from BEG to END.
 See `yublin-toggle-region'."
      :move-point nil
      (interactive ,(string 60 ?r 62))
