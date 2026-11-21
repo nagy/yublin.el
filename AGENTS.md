@@ -1,66 +1,49 @@
-# AGENTS.md
+# AGENTS.md — yublin.el
 
-## Project
+## Purpose
 
-yublin.el: an Emacs Lisp package implementing the Yublin speed-writing
-shorthand (600 common English words reduced to 1- and 2-letter
-shortcuts) as a buffer-local minor mode built on Emacs' `abbrev-mode`.
-Requires Emacs 28.1+. License: AGPL-3.0-or-later.
+`yublin.el`: Emacs Lisp package that implements the Yublin speed-writing shorthand,
+600 common English words reduced to 1- and 2-letter shortcuts, as a buffer-local
+minor mode built on `abbrev-mode`. Emacs 28.1 or newer. License:
+AGPL-3.0-or-later.
 
 ## Layout
 
-- `yublin.el` — the package (dictionary, abbrev tables, minor mode,
-  joined-word guard, region toggle, evil operator).
-- `yublin-tests.el` — the ert suite (54 tests). Must stay green.
-- `flake.nix` — flake-parts + `melpaBuild`; runs the ert suite in
-  `checkPhase` with byte-compile warnings as errors (`doCheck = true`).
-  `checks.lint` gates `package-lint` + `checkdoc` on `yublin.el`
-  (the `eval-after-load` finding for the optional evil integration is
-  deliberately allowlisted there).
-  The package `version` comes from `self.lastModifiedDate` (derived
-  `0-unstable-YYYY-MM-DD`, epoch fallback for non-git sources), so no
-  manual version bumps.
+- `yublin.el` — the package: dictionary, abbrev tables, minor mode, joined-word
+  guard, region toggle, evil operator.
+- `yublin-tests.el` — the ERT suite, 54 tests. Must stay green.
+- `flake.nix` — flake-parts plus `melpaBuild`. Runs the ERT suite in `checkPhase`
+  with byte-compile warnings as errors (`doCheck = true`). `checks.lint` gates
+  package-lint and checkdoc on `yublin.el`, and allowlists the `eval-after-load`
+  finding for the optional evil integration on purpose.
 
+## Build and test
 
-## Commands
+- `nix flake check` — build, ERT suite, package-lint, checkdoc. Run before done.
+- `nix build` — the package. The checkPhase runs the suite.
+- `nix fmt` — nixfmt through treefmt.
+- `emacs --batch -L . -l yublin-tests.el -f ert-run-tests-batch-and-exit` — run
+  the tests in the dev environment (Emacs 31).
+- `emacs --batch -L . -f batch-byte-compile yublin.el` — byte-compile check.
 
-Run the tests (dev environment, Emacs 31):
+## Rules
 
-```
-emacs --batch -L . -l yublin-tests.el -f ert-run-tests-batch-and-exit
-```
-
-Byte-compile check:
-
-```
-emacs --batch -L . -f batch-byte-compile yublin.el
-```
-
-Full build gate (Nix flake; builds the package with byte-compile
-warnings as errors, runs the ert suite in `checkPhase`, and lints with
-`package-lint` + `checkdoc`):
-
-```
-nix build
-nix flake check
-```
+- Keep the shortcut set letter-only and 1 to 2 characters. Expansions may hold
+  apostrophes. Do not add a shortcut that holds an apostrophe. Contractions carry
+  dedicated letter-only shortcuts such as `dt`, `gb` and `ll`.
+- Keep the one deliberate duplicate: `standing` maps to both `cq` and `oq`. The
+  encode table resolves it last-wins to `oq`, and both decode back. The
+  `yublin-dictionary-standing-has-two-shortcuts` test pins it. Do not "fix" it.
+- Keep encode and decode symmetric. Contractions stay whole tokens in both
+  directions, and decode never expands a letter adjacent to an apostrophe.
+- Ship an ERT regression test with every behaviour change.
+- Do not hand-bump the version. The flake derives `0-unstable-YYYY-MM-DD` from
+  `self.lastModifiedDate`, with an epoch fallback for non-git sources.
+- Do not commit generated artifacts. `GENERAL_RECOMMENDATIONS.org` is the review
+  document, and its `.pdf` and `.html` files come from it and stay untracked.
 
 ## Conventions
 
-- `lexical-binding: t` in both files; no other dependencies.
-- Docstrings must pass `checkdoc`; keep them clean.
-- Dictionary is inline data in `yublin--dictionary` (619 entries).
-  Shortcuts are 1-2 letters, letter-only; expansions may contain
-  apostrophes (contractions have dedicated letter-only shortcuts such as
-  `dt`, `gb`, `ll`). Do not add shortcuts containing apostrophes.
-- One expansion is deliberately duplicated in the source cheatsheet:
-  `standing` maps to both `cq` and `oq`. The encode table resolves it
-  last-wins to `oq`; both decode back. Do not "fix" this — the
-  `yublin-dictionary-standing-has-two-shortcuts` test pins it.
-- Encode and decode must stay symmetric: contractions are whole tokens
-  in both directions; decode must never expand a letter adjacent to an
-  apostrophe.
-- Behavior changes ship with ert regression tests in `yublin-tests.el`.
-- Do not commit generated artifacts (`GENERAL_RECOMMENDATIONS.org` is
-  the review document; its `.pdf`/`.html` are regenerated from it and
-  not tracked).
+- `lexical-binding: t` in both files. The package carries no other dependency.
+- Keep docstrings clean under checkdoc.
+- The dictionary stays inline data in `yublin--dictionary`, 619 entries.
