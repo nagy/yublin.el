@@ -19,7 +19,7 @@ AGPL-3.0-or-later.
 
 ## Build and test
 
-- `nix flake check` — build, ERT suite, package-lint, checkdoc. Run before done.
+- `nix flake check` — the gate. Run before done.
 - `nix build` — the package. The checkPhase runs the suite.
 - `nix fmt` — nixfmt through treefmt.
 - `emacs --batch -L . -l yublin-tests.el -f ert-run-tests-batch-and-exit` — run
