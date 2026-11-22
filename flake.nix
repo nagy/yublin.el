@@ -35,6 +35,7 @@
         {
           packages.yublin = melpaBuild {
             pname = "yublin";
+            preferLocalBuild = true;
             # Nix rejects versions Nixpkgs cannot parse. Convention for
             # unreleased packages: <upstream-version>-unstable-<YYYY-MM-DD>,
             # where the date is the last commit touching the source.
