@@ -98,7 +98,7 @@
           # byte-compilation cannot (docstring style, package metadata,
           # prefix conventions). Findings fail the build.
           checks.lint =
-            pkgs.runCommand "yublin-lint"
+            pkgs.runCommandLocal "yublin-lint"
               {
                 nativeBuildInputs = [
                   (pkgs.emacsPackages.emacsWithPackages (p: [ p.package-lint ]))
