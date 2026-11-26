@@ -11,19 +11,22 @@ AGPL-3.0-or-later.
 
 - `yublin.el` — the package: dictionary, abbrev tables, minor mode, joined-word
   guard, region toggle, evil operator.
-- `yublin-tests.el` — the ERT suite, 54 tests. Must stay green.
+- `test/yublin-test.el` — the ERT suite, 54 tests. Must stay green. One test file
+  per source file, named `<unit>-test.el`. The flake loads `test/*-test.el` by
+  glob, so a new test file needs no flake edit. Shared helpers would go in
+  `test/yublin-test-helper.el`, which must not match `*-test.el`.
 - `flake.nix` — flake-parts plus `melpaBuild`. Runs the ERT suite in `checkPhase`
   with byte-compile warnings as errors (`doCheck = true`). `checks.lint` gates
-  package-lint and checkdoc on `yublin.el`, and allowlists the `eval-after-load`
-  finding for the optional evil integration on purpose.
+  package-lint and checkdoc on `*.el test/*.el`, and allowlists the
+  `eval-after-load` finding for the optional evil integration on purpose.
 
 ## Build and test
 
 - `nix flake check` — the gate. Run before done.
 - `nix build` — the package. The checkPhase runs the suite.
 - `nix fmt` — nixfmt through treefmt.
-- `emacs --batch -L . -l yublin-tests.el -f ert-run-tests-batch-and-exit` — run
-  the tests in the dev environment (Emacs 31).
+- `emacs --batch -L . -L test -l test/yublin-test.el -f
+  ert-run-tests-batch-and-exit` — run the tests in the dev environment (Emacs 31).
 - `emacs --batch -L . -f batch-byte-compile yublin.el` — byte-compile check.
 
 ## Rules
@@ -36,7 +39,9 @@ AGPL-3.0-or-later.
   `yublin-dictionary-standing-has-two-shortcuts` test pins it. Do not "fix" it.
 - Keep encode and decode symmetric. Contractions stay whole tokens in both
   directions, and decode never expands a letter adjacent to an apostrophe.
-- Ship an ERT regression test with every behaviour change.
+- Ship an ERT regression test with every behaviour change. Prefix every
+  `ert-deftest` name with `yublin-`, test files included, so the lint gate stays
+  strict.
 - Do not hand-bump the version. The flake derives `0-unstable-YYYY-MM-DD` from
   `self.lastModifiedDate`, with an epoch fallback for non-git sources.
 - Do not commit generated artifacts. `GENERAL_RECOMMENDATIONS.org` is the review

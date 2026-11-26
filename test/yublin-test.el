@@ -1,4 +1,4 @@
-;;; yublin-tests.el --- Tests for yublin -*- lexical-binding: t -*-
+;;; yublin-test.el --- Tests for yublin -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2026  Daniel Nagy
 
@@ -18,12 +18,12 @@
 
 ;;; Commentary:
 
-;; To run these tests:
+;; To run the suite interactively: M-x ert RET.
 ;;
-;;   (require 'yublin)
-;;   (require 'ert)
-;;
-;; Then: M-x ert RET
+;; For a batch run, put `-L . -L test' on the command line, load this
+;; file, and call `ert-run-tests-batch-and-exit'.
+
+;;; Code:
 
 (require 'yublin)
 (require 'ert)
@@ -152,8 +152,7 @@ If USE-FULL-TABLE is non-nil, use the table with single-letter shortcuts."
   (should (equal (yublin-test--expand "s" t) "she")))
 
 (ert-deftest yublin-no-expand-single-letter-when-opt-out ()
-  "When `yublin-enable-single-letter' is nil, single-letter shortcuts
-should NOT expand."
+  "When `yublin-enable-single-letter' is nil, single-letter shortcuts do not expand."
   (should (equal (yublin-test--expand "t") "t"))
   (should (equal (yublin-test--expand "n") "n"))
   (should (equal (yublin-test--expand "y") "y")))
@@ -183,7 +182,7 @@ should NOT expand."
       (yublin-mode -1))))
 
 (ert-deftest yublin-mode-restores-previous-table ()
-  "If abbrev-mode was already on with a custom table, restore it."
+  "If `abbrev-mode' was already on with a custom table, restore it."
   (with-temp-buffer
     (abbrev-mode 1)
     (let ((custom-table (make-abbrev-table)))
@@ -202,8 +201,8 @@ should NOT expand."
     (should-not yublin-mode)))
 
 (ert-deftest yublin-mode-restores-global-abbrev ()
-  "When abbrev-mode is globally on with default table, toggling yublin
-should restore the original state without disabling abbrev-mode."
+  "When `abbrev-mode' is globally on, toggling yublin restores the state.
+The default table must come back without disabling `abbrev-mode'."
   (with-temp-buffer
     (abbrev-mode 1)
     (let ((orig-table local-abbrev-table))
@@ -343,8 +342,7 @@ letter-only shortcuts like dt/gb/ll) and must pass through unchanged."
     (should (equal (yublin--decode-text text) text))))
 
 (ert-deftest yublin-decode-leaves-apostrophe-suffix-alone ()
-  "A letter starting right after an apostrophe must not decode
-(e.g. the s in DO's, or a leading 's)."
+  "A letter right after an apostrophe must not decode: DO's, or a leading 's."
   (should (equal (yublin--decode-text "DO's") "DO's"))
   (should (equal (yublin--decode-text "'s been a long time")
                  "'s been a long time")))
@@ -466,5 +464,5 @@ Returns the buffer contents after expansion."
   (should (equal (yublin-test--expand-with-yublin-mode "val{t")
                  "val{t")))
 
-(provide 'yublin-tests)
-;;; yublin-tests.el ends here
+(provide 'yublin-test)
+;;; yublin-test.el ends here

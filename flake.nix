@@ -56,10 +56,21 @@
             # The ert suite ships with the package; run it in checkPhase
             # so `nix build` fails on regressions, exactly like the old
             # default.nix gate did.
+            #
+            # melpaBuild stages root-level *.el only (its `files' default),
+            # so the test tree has to be copied back in before it can be
+            # loaded.  The glob keeps a new test file from needing a flake
+            # edit: printf repeats "-l %s" per match, failglob makes an
+            # empty glob a shell error so the `||' guard fires instead of
+            # running zero tests, and the unquoted $test_args is what
+            # splits it into `-l <file>' pairs.
             checkPhase = ''
               runHook preCheck
-              emacs --batch -L . \
-                -l yublin-tests.el \
+              cp -r ${./test} ./test
+              shopt -s failglob
+              test_args=$(printf -- "-l %s " test/*-test.el) || { echo 'no tests matched test/*-test.el' >&2; exit 1; }
+              shopt -u failglob
+              emacs --batch -L . -L test $test_args \
                 -f ert-run-tests-batch-and-exit
               runHook postCheck
             '';
@@ -109,8 +120,10 @@
               }
               ''
               export HOME=$TMPDIR
-              cp "$src"/yublin.el .
-              # package-lint assumes online ELPA. Offline it needs
+              # The test tree is part of the lint surface, so copy the whole
+              # source tree rather than the single staged file.
+              cp -r "$src"/. .
+              # package-lint assumes online ELPA.  Offline it needs
               # stubs: extend `package-lint--sane-prefixes' where
               # symbols use a different prefix than the file name
               # suggests (here: the evil operator), and add missing deps
@@ -118,13 +131,18 @@
               # `package-alist' on every call, so plain push before
               # -f package-lint-batch-and-exit gets wiped.
               #
+              # `package-lint-main-file' is mandatory once test/*.el joins
+              # the glob: without it package-lint treats each test file as
+              # its own package and asks for a Package-Requires header.
+              #
               # Warnings are made non-fatal and the output is gated by
               # hand instead, so one documented exception (below) can be
               # allowlisted without weakening everything else.
               pl_log=$(emacs --batch -l package-lint \
+                --eval '(setq package-lint-main-file "yublin.el")' \
                 --eval '(setq package-lint--sane-prefixes (concat package-lint--sane-prefixes "\\|evil-yublin"))' \
                 --eval '(setq package-lint-batch-fail-on-warnings nil)' \
-                -f package-lint-batch-and-exit yublin.el 2>&1 || true)
+                -f package-lint-batch-and-exit *.el test/*.el 2>&1 || true)
               # Accepted finding (documented exception): the optional
               # evil integration defers via `eval-after-load'; making
               # evil a hard dependency would be worse. "Entering
@@ -134,8 +152,11 @@
                           -e "eval-after-load' is for use" || true)
               if [ -n "$pl_log" ]; then printf '%s\n' "$pl_log"; exit 1; fi
               # checkdoc is built in but exits 0 on findings — gate on
-              # non-empty output.
-              lint_log=$(emacs --batch -l checkdoc --eval '(checkdoc-file "yublin.el")' 2>&1 || true)
+              # non-empty output.  Test files are linted too, so they keep
+              # the same header and docstring rules as the code under test.
+              lint_log=$(emacs --batch -l checkdoc \
+                --eval '(mapc (lambda (f) (checkdoc-file f)) command-line-args-left)' \
+                *.el test/*.el 2>&1 || true)
               if [ -n "$lint_log" ]; then printf '%s\n' "$lint_log"; exit 1; fi
               touch $out
             '';
